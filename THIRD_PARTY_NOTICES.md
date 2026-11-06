@@ -2,6 +2,8 @@
 
 根目录 MIT 许可证适用于本项目自有代码。第三方代码和发行包中的依赖保留各自的许可证；本文件不替代其原文。
 
+v1.1.1 起，以下原文在单文件 EXE 的“关于”中提供查看。表中的 `licenses/` 指 EXE 内部资源目录，无需在 EXE 旁放置此目录。
+
 | 组件 | 用途与来源 | 许可证位置 |
 | --- | --- | --- |
 | PhotoshopToSpine v7.42 | [Esoteric Software 官方脚本](https://github.com/EsotericSoftware/spine-scripts/tree/master/photoshop)，修订 `69c429295b5b19f66f959ad2ac644d40a14121e5` | [上游 LICENSE](vendor/photoshop-to-spine/LICENSE) 及 JSX 文件头的声明 |
@@ -14,6 +16,6 @@
 
 官方 JSX 以原始字节保存，在运行时临时替换入口、提供参数、处理错误、恢复文档状态。上游图层导出实现仍由其作者持有版权。自定义原点、输出管理与界面属于本项目的集成逻辑。
 
-构建脚本会把实际构建环境中可获得的依赖许可证复制到发行包的 `licenses/`，并记录构建版本。修改依赖或分发方式时，请同时检查其许可证。
+构建脚本会收集实际构建环境的依赖许可证及项目许可证，按原始字节嵌入 EXE，并记录依赖版本。软件内提供逐项查看入口。修改依赖或分发方式时，请同时检查其许可证。
 
 Photoshop 和 Spine 需要用户自行合法安装并授权，不属于本项目的开源授权范围，也不随发行包提供。本项目不代表 Adobe 或 Esoteric Software。

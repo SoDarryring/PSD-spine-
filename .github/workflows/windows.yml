@@ -28,9 +28,9 @@ jobs:
       - name: Build portable package and verify bundled resources
         shell: pwsh
         run: ./scripts/build.ps1
-      - name: Upload Windows portable ZIP
+      - name: Upload Windows standalone EXE
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: PSD-to-Spine-windows-x64
-          path: dist/*.zip
+          path: dist/*.exe
           if-no-files-found: error

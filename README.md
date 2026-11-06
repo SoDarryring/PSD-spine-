@@ -24,11 +24,13 @@
 
 ## 使用便携版
 
-1. 从 [Releases](https://github.com/SoDarryring/PSD-spine-/releases) 下载 Windows x64 ZIP，完整解压。
-2. 双击 `PSD一键转Spine.exe`。
+1. 从 [Releases](https://github.com/SoDarryring/PSD-spine-/releases) 下载 Windows x64 **EXE 单文件版**。
+2. 双击下载的 EXE。使用、复制或分发这个 EXE 即可，无需附带 `licenses` 文件夹或使用说明文件。
 3. 拖入源文件，确认设置；通常保持默认值即可。
 4. 点击“生成 Spine 工程”，完成后点击“打开输出”。
 5. 使用 Spine **3.8.99** 打开生成的工程。
+
+从 v1.1.1 开始，分发文件只有 EXE。必要的项目许可证和第三方许可原文内置，在右上角“关于”中查看；使用说明保留在本仓库，不另附文件。
 
 例如，转换 `角色.psd` 后会在它旁边得到：
 
@@ -72,7 +74,7 @@ pwsh -File scripts/build.ps1
 
 如果依赖安装在前述虚拟环境中，打包时使用 `pwsh -File scripts/build.ps1 -PythonExecutable .venv/Scripts/python.exe`。
 
-打包产物位于 `dist/`。GitHub Actions 在 Windows 上运行常规测试，并构建可下载的便携包。常规测试不启动 Photoshop 或 Spine。
+打包产物位于 `dist/`，发行附件只提供可直接运行的 EXE。构建时先收集必要许可原文，再嵌入 EXE；会把 EXE 单独复制到空目录、从该目录启动，验证内置许可查看器及运行资源。GitHub Actions 在 Windows 上执行相同流程。常规测试不启动 Photoshop 或 Spine。
 
 真实 Photoshop / Spine 集成测试是显式启用的本地检查，使用代码生成的色块样例，不需要提供或上传美术资源：
 

@@ -19,6 +19,7 @@ import customtkinter as ctk
 from tkinterdnd2 import COPY, DND_FILES, REFUSE_DROP, TkinterDnD
 
 import psd_to_spine as core
+import bundled_documents as documents
 
 BG, CARD, TEXT, MUTED = "#F3F5FA", "#FFFFFF", "#18243B", "#738099"
 BLUE, LINE, PALE, FONT = "#3563E9", "#E4E9F2", "#EDF2FF", "Microsoft YaHei UI"
@@ -64,6 +65,7 @@ class App(ctk.CTk, TkinterDnD.DnDWrapper):
         self.stop_requested = threading.Event()
         self.events = queue.Queue()
         self.result_dir = None
+        self.help_window = None
         self.output = self.custom_output = None
         self.spine = core.find_spine()
         self.scale, self.padding = tk.StringVar(value="100"), tk.StringVar(value="1")
@@ -119,6 +121,9 @@ class App(ctk.CTk, TkinterDnD.DnDWrapper):
         self.label(title, "从分层设计稿，到可编辑的 Spine 工程", small=True).pack(anchor="w", pady=(1, 0))
         ctk.CTkLabel(header, text="Spine 3.8.99", font=self.small_font, text_color=BLUE,
                      fg_color=PALE, corner_radius=16, width=132, height=32).pack(side="right")
+        ctk.CTkButton(header, text="关于", command=self.show_help, width=56, height=32,
+                       font=self.small_font, fg_color="transparent", text_color=BLUE,
+                       hover_color=PALE, corner_radius=8).pack(side="right", padx=(8, 12))
         body = ctk.CTkFrame(self, fg_color="transparent")
         body.grid(row=1, column=0, sticky="nsew", padx=28)
         body.grid_columnconfigure(0, weight=5, uniform="columns")
@@ -441,6 +446,52 @@ class App(ctk.CTk, TkinterDnD.DnDWrapper):
         target.mkdir(parents=True, exist_ok=True)
         os.startfile(target)
 
+    def show_help(self):
+        if self.help_window is not None and self.help_window.winfo_exists():
+            self.help_window.lift()
+            return
+        try:
+            self.help_entries = documents.document_entries()
+            documents.verify_documents()
+        except (OSError, ValueError) as exc:
+            messagebox.showerror("无法读取许可声明", str(exc), parent=self)
+            return
+        self.help_window = window = ctk.CTkToplevel(self, fg_color=BG)
+        window.title(f"关于 · PSD 一键转 Spine {core.VERSION}")
+        work = monitor_work_area(self)
+        scale = self._get_window_scaling()
+        width = round(min(940, (work[2] - work[0] - 50) / scale))
+        height = round(min(720, (work[3] - work[1] - 70) / scale))
+        window.geometry(f"{width}x{height}")
+        window.minsize(min(640, width), min(480, height))
+        window.grid_columnconfigure(0, weight=1)
+        window.grid_rowconfigure(2, weight=1)
+        self.label(window, f"PSD 一键转 Spine · {core.VERSION}", bold=True).grid(
+            row=0, column=0, sticky="w", padx=22, pady=(20, 10))
+        top = ctk.CTkFrame(window, fg_color="transparent")
+        top.grid(row=1, column=0, sticky="ew", padx=22, pady=(0, 12))
+        top.grid_columnconfigure(0, weight=1)
+        self.help_selector = ctk.CTkOptionMenu(top, values=[entry["title"] for entry in self.help_entries],
+                                               command=self.select_help_document, font=self.font,
+                                               dropdown_font=self.small_font, height=38,
+                                               fg_color=BLUE, button_color="#2851CF")
+        self.help_selector.grid(row=0, column=0, sticky="ew")
+        self.help_text = ctk.CTkTextbox(window, wrap="word", font=self.small_font,
+                                        fg_color=CARD, text_color=TEXT, corner_radius=12)
+        self.help_text.grid(row=2, column=0, sticky="nsew", padx=22, pady=(0, 12))
+        self.label(window, "本软件及第三方组件的版权与许可原文。", small=True).grid(
+            row=3, column=0, sticky="w", padx=22, pady=(0, 18))
+        self.select_help_document(self.help_entries[0]["title"])
+
+    def select_help_document(self, title):
+        entry = next(item for item in self.help_entries if item["title"] == title)
+        text = documents.read_document(entry).decode("utf-8-sig", errors="replace")
+        self.help_text.configure(state="normal")
+        self.help_text.delete("1.0", "end")
+        self.help_text.insert("1.0", text)
+        self.help_text.configure(state="disabled")
+        self.help_text.yview_moveto(0)
+
     def on_close(self):
         if self.running:
             messagebox.showinfo("正在转换", "请先点击“完成当前后停止”，等待当前 PSD 处理完再关闭。", parent=self)
@@ -456,6 +507,13 @@ def self_check(destination: Path) -> int:
         app = App()
         app.withdraw()
         core.build_export_script(Path("check.psd"), Path("check.json"), core.ExportOptions())
+        count = documents.verify_documents()
+        app.show_help()
+        app.help_window.withdraw()
+        for entry in app.help_entries:
+            app.select_help_document(entry["title"])
+            if app.help_text.get("1.0", "end-1c") != documents.read_document(entry).decode("utf-8-sig", errors="replace"):
+                raise RuntimeError("许可原文显示不完整。")
         with tempfile.TemporaryDirectory() as folder:
             source = Path(folder).resolve() / "中文 设计.psd"
             source.touch()
@@ -464,7 +522,8 @@ def self_check(destination: Path) -> int:
             if app.paths != [source] or app.output is not None:
                 raise RuntimeError("文件拖入或默认输出位置检查失败。")
         report.update(ok=True, tkdnd=app.TkdndVersion, exporter="verified",
-                      native_drop_handler="verified", default_output="beside_psd")
+                      native_drop_handler="verified", default_output="beside_psd",
+                      embedded_documents=count, license_viewer="verified")
     except Exception as exc:
         report["error"] = type(exc).__name__ + ": " + str(exc)
     finally:
