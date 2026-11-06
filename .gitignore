@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.work/
+build/
+dist/
+*.spec
+*.log
+*.psd
+*.psb
+*.spine
+input/
+output/
+.psd-spine-*/
+.DS_Store
+Thumbs.db

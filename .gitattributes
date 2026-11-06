@@ -1,0 +1,7 @@
+* text=auto
+*.py text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.ps1 text eol=lf
+# This upstream file is hash-verified at runtime. Preserve its exact bytes.
+vendor/photoshop-to-spine/PhotoshopToSpine.jsx -text
