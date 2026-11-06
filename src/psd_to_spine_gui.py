@@ -77,9 +77,10 @@ class App(ctk.CTk, TkinterDnD.DnDWrapper):
         self.spine_label = tk.StringVar()
         self.font, self.small_font, self.bold_font = ctk.CTkFont(FONT, 15), ctk.CTkFont(FONT, 13), ctk.CTkFont(FONT, 16, "bold")
         self.TkdndVersion = TkinterDnD._require(self)
+        self._drop_registered = self._drop_registration_pending = False
         self.create_widgets()
         self.refresh_labels()
-        self.register_drop_tree(self)
+        self.bind("<Visibility>", self.on_first_visibility, add="+")
         self.add_files(inputs)
         self.protocol("WM_DELETE_WINDOW", self.on_close)
         self.bind("<Control-o>", lambda event: self.select_files())
@@ -199,8 +200,6 @@ class App(ctk.CTk, TkinterDnD.DnDWrapper):
                                          width=138, fg_color="#EDF1F8", text_color=TEXT, hover_color="#E1E7F3",
                                          font=self.font, state="disabled", corner_radius=10)
         self.stop_button.grid(row=0, column=1, padx=(0, 10))
-        # Set the final font before the native label's first paint. Updating it
-        # after creation regrids the canvas and can leave a blank white label.
         self.start_button = self.button(action_row, "生成 Spine 工程", self.start, primary=True,
                                          width=188, height=48, font=self.bold_font)
         self.start_button.grid(row=0, column=2)
@@ -253,13 +252,24 @@ class App(ctk.CTk, TkinterDnD.DnDWrapper):
         self.button(spine_row, "选择程序", self.select_spine, width=102).pack(side="right")
         self.label(contents, textvariable=self.spine_label, small=True).grid(row=9, column=0, sticky="w", padx=8)
 
-    def register_drop_tree(self, widget):
-        widget.drop_target_register(DND_FILES)
-        widget.dnd_bind("<<DropEnter>>", self.on_drop_enter)
-        widget.dnd_bind("<<DropLeave>>", self.on_drop_leave)
-        widget.dnd_bind("<<Drop>>", self.on_drop)
-        for child in widget.winfo_children():
-            self.register_drop_tree(child)
+    def on_first_visibility(self, event):
+        if event.widget is self and not self._drop_registered and not self._drop_registration_pending:
+            self._drop_registration_pending = True
+            self.after_idle(self.register_file_drop)
+
+    def register_file_drop(self):
+        if self._drop_registered:
+            return
+        # OLE registration can force native HWND creation. Wait for the first
+        # visible paint instead of registering CTk's internal labels during
+        # construction (which leaves the final caption white on Windows).
+        # TkDnD resolves child windows to their registered ancestor.
+        self.drop_target_register(DND_FILES)
+        self.dnd_bind("<<DropEnter>>", self.on_drop_enter)
+        self.dnd_bind("<<DropLeave>>", self.on_drop_leave)
+        self.dnd_bind("<<Drop>>", self.on_drop)
+        self._drop_registered = True
+        self._drop_registration_pending = False
 
     def on_drop_enter(self, event):
         if self.running:
@@ -310,7 +320,6 @@ class App(ctk.CTk, TkinterDnD.DnDWrapper):
                            fg_color="transparent", hover_color="#E5EAF4", text_color=MUTED,
                            font=ctk.CTkFont(FONT, 20)).grid(row=0, column=2, rowspan=2, padx=8)
             self.file_rows[path] = row
-            self.register_drop_tree(row)
         self.count.set(f"{len(self.paths)} 个文件")
 
     def remove_file(self, path):
@@ -507,7 +516,10 @@ def self_check(destination: Path) -> int:
     app = None
     try:
         app = App()
+        app.update()
         app.withdraw()
+        if not app._drop_registered:
+            raise RuntimeError("窗口首次显示后未启用原生文件拖放。")
         core.build_export_script(Path("check.psd"), Path("check.json"), core.ExportOptions())
         count = documents.verify_documents()
         app.show_help()
@@ -524,7 +536,8 @@ def self_check(destination: Path) -> int:
             if app.paths != [source] or app.output is not None:
                 raise RuntimeError("文件拖入或默认输出位置检查失败。")
         report.update(ok=True, tkdnd=app.TkdndVersion, exporter="verified",
-                      native_drop_handler="verified", default_output="beside_psd",
+                      native_drop_handler="verified", native_drop_registration="after_visibility",
+                      default_output="beside_psd",
                       embedded_documents=count, license_viewer="verified")
     except Exception as exc:
         report["error"] = type(exc).__name__ + ": " + str(exc)

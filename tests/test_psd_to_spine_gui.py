@@ -4,7 +4,8 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-import customtkinter as ctk
+import tkinter as tk
+from tkinterdnd2 import DND_FILES, TkinterDnD
 
 from psd_to_spine_gui import App, window_bounds
 import bundled_documents as documents
@@ -13,28 +14,41 @@ import bundled_documents as documents
 class WindowAndDropTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.startup_font_changes = []
-        configure = ctk.CTkButton.configure
+        cls.drop_registrations = []
+        register = TkinterDnD.DnDWrapper.drop_target_register
 
-        def observe_configure(button, *args, **kwargs):
-            if "font" in kwargs and button.cget("text") == "生成 Spine 工程":
-                cls.startup_font_changes.append(kwargs["font"])
-            return configure(button, *args, **kwargs)
+        def observe_register(widget, *types):
+            cls.drop_registrations.append((widget, bool(widget._root().winfo_viewable())))
+            return register(widget, *types)
 
-        with patch.object(ctk.CTkButton, "configure", new=observe_configure):
-            cls.app = App()
+        with patch.object(TkinterDnD.DnDWrapper, "drop_target_register", new=observe_register), \
+                patch.object(tk.BaseWidget, "drop_target_register", new=observe_register), \
+                TemporaryDirectory() as folder:
+            initial = Path(folder) / "启动输入.psd"
+            initial.touch()
+            cls.app = App([initial])
+            cls.before_map_registrations = list(cls.drop_registrations)
+            cls.app.update()
+            cls.app.remove_file(initial.resolve())
         cls.app.withdraw()
 
     @classmethod
     def tearDownClass(cls):
         cls.app.destroy()
 
-    def test_start_button_has_final_font_on_creation_before_first_paint(self):
-        # Reconfiguring this native label's font regrids its canvas before the
-        # first paint and caused the cold-start white rectangle on Windows.
-        self.assertEqual(self.startup_font_changes, [], "启动阶段再次修改了生成按钮的字体，会触发首次绘制异常")
-        self.assertIs(self.app.start_button.cget("font"), self.app.bold_font)
-        self.assertEqual(self.app.start_button.cget("height"), 48)
+    def test_native_drop_registration_waits_for_first_visible_window(self):
+        # Native OLE registration before first visibility reproduces the white
+        # caption. Include startup inputs so their rows cannot register early.
+        self.assertEqual(self.before_map_registrations, [])
+        self.assertEqual(self.drop_registrations, [(self.app, True)])
+        self.assertTrue(self.app._drop_registered)
+
+    def test_native_drop_resolves_child_caption_to_registered_root(self):
+        app = self.app
+        types = app.tk.call("tkdnd::platform_specific_types", (DND_FILES,))
+        target = app.tk.call("tkdnd::generic::FindWindowWithCommonTypes",
+                             str(app.start_button._text_label), types)
+        self.assertEqual(str(target[0]), str(app))
 
     def test_help_viewer_displays_original_license_and_reuses_its_window(self):
         app = self.app
