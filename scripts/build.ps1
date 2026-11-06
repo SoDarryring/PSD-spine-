@@ -12,15 +12,19 @@ try {
     $packageName = "PSD-to-Spine-v$version-windows-x64"
     $package = Join-Path $distRoot $packageName
     $vendorDirectory = Join-Path $repoRoot 'vendor/photoshop-to-spine'
+    $assetDirectory = Join-Path $repoRoot 'assets'
+    $icon = Join-Path $assetDirectory 'app-icon.ico'
     $documentDirectory = Join-Path $repoRoot ('.work/embedded-notices-' + [guid]::NewGuid().ToString('N'))
     & $PythonExecutable scripts/collect_licenses.py --bundle $documentDirectory
     if ($LASTEXITCODE -ne 0) { throw '内置帮助与许可证收集失败。' }
     & $PythonExecutable -m PyInstaller --noconfirm --clean --onefile --windowed `
         --name 'PSD一键转Spine' --distpath $package --workpath '.work/pyinstaller' --specpath '.work' `
+        --icon $icon `
         --collect-all customtkinter --collect-all tkinterdnd2 `
         --exclude-module numpy `
         --recursive-copy-metadata customtkinter --copy-metadata tkinterdnd2 `
         --add-data "$vendorDirectory;vendor/photoshop-to-spine" `
+        --add-data "$assetDirectory;assets" `
         --add-data "$documentDirectory;documents" 'src/psd_to_spine_gui.py'
     if ($LASTEXITCODE -ne 0) { throw 'PyInstaller 打包失败。' }
     $selfCheck = Join-Path $repoRoot '.work/frozen-self-check.json'

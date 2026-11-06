@@ -60,6 +60,8 @@ class App(ctk.CTk, TkinterDnD.DnDWrapper):
         ctk.set_default_color_theme("blue")
         super().__init__(fg_color=BG)
         self.title(f"PSD 一键转 Spine · {core.VERSION}")
+        asset_root = Path(sys._MEIPASS) if getattr(sys, "frozen", False) else Path(__file__).resolve().parent.parent
+        self.iconbitmap(default=str(asset_root / "assets" / "app-icon.ico"))
         self.paths, self.file_rows, self.controls = [], {}, []
         self.running = False
         self.stop_requested = threading.Event()

@@ -20,7 +20,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Callable
 
-VERSION = "1.1.3"
+VERSION = "1.1.4"
 SPINE_VERSION = "3.8.99"
 UPSTREAM_REVISION = "69c429295b5b19f66f959ad2ac644d40a14121e5"
 UPSTREAM_SHA256 = "554b924e22189cd08fdea02e10530827f3a22ad790ee5a85975f511329bcf9ef"
