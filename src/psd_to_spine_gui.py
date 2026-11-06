@@ -96,9 +96,9 @@ class App(ctk.CTk, TkinterDnD.DnDWrapper):
         return ctk.CTkLabel(parent, text=text, font=self.bold_font if bold else self.small_font if small else self.font,
                             text_color=MUTED if small else TEXT, anchor="w", **kwargs)
 
-    def button(self, parent, text, command, *, primary=False, **kwargs):
-        widget = ctk.CTkButton(parent, text=text, command=command, height=40, corner_radius=9,
-                               font=self.font, fg_color=BLUE if primary else "#EDF1F8",
+    def button(self, parent, text, command, *, primary=False, height=40, font=None, **kwargs):
+        widget = ctk.CTkButton(parent, text=text, command=command, height=height, corner_radius=9,
+                               font=font or self.font, fg_color=BLUE if primary else "#EDF1F8",
                                hover_color="#2851CF" if primary else "#E1E7F3",
                                text_color="white" if primary else TEXT, **kwargs)
         self.controls.append(widget)
@@ -199,8 +199,10 @@ class App(ctk.CTk, TkinterDnD.DnDWrapper):
                                          width=138, fg_color="#EDF1F8", text_color=TEXT, hover_color="#E1E7F3",
                                          font=self.font, state="disabled", corner_radius=10)
         self.stop_button.grid(row=0, column=1, padx=(0, 10))
-        self.start_button = self.button(action_row, "生成 Spine 工程", self.start, primary=True, width=188)
-        self.start_button.configure(height=48, font=self.bold_font)
+        # Set the final font before the native label's first paint. Updating it
+        # after creation regrids the canvas and can leave a blank white label.
+        self.start_button = self.button(action_row, "生成 Spine 工程", self.start, primary=True,
+                                         width=188, height=48, font=self.bold_font)
         self.start_button.grid(row=0, column=2)
 
     def create_options(self, contents):

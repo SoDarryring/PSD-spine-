@@ -2,6 +2,9 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
+
+import customtkinter as ctk
 
 from psd_to_spine_gui import App, window_bounds
 import bundled_documents as documents
@@ -10,12 +13,28 @@ import bundled_documents as documents
 class WindowAndDropTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.app = App()
+        cls.startup_font_changes = []
+        configure = ctk.CTkButton.configure
+
+        def observe_configure(button, *args, **kwargs):
+            if "font" in kwargs and button.cget("text") == "生成 Spine 工程":
+                cls.startup_font_changes.append(kwargs["font"])
+            return configure(button, *args, **kwargs)
+
+        with patch.object(ctk.CTkButton, "configure", new=observe_configure):
+            cls.app = App()
         cls.app.withdraw()
 
     @classmethod
     def tearDownClass(cls):
         cls.app.destroy()
+
+    def test_start_button_has_final_font_on_creation_before_first_paint(self):
+        # Reconfiguring this native label's font regrids its canvas before the
+        # first paint and caused the cold-start white rectangle on Windows.
+        self.assertEqual(self.startup_font_changes, [], "启动阶段再次修改了生成按钮的字体，会触发首次绘制异常")
+        self.assertIs(self.app.start_button.cget("font"), self.app.bold_font)
+        self.assertEqual(self.app.start_button.cget("height"), 48)
 
     def test_help_viewer_displays_original_license_and_reuses_its_window(self):
         app = self.app
