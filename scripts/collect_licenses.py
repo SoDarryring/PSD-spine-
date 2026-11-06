@@ -26,6 +26,9 @@ def collect(destination: Path):
         shutil.copy2(python_license, destination / "Python-LICENSE.txt")
     for runtime in (Path(sys.base_prefix) / "tcl").glob("*/license.terms"):
         shutil.copy2(runtime, destination / (runtime.parent.name + "-license.terms"))
+    original_notices = Path(__file__).resolve().parents[1] / "vendor" / "licenses"
+    for name in ("Tcl-license.terms", "TkDnD-license.terms"):
+        shutil.copy2(original_notices / name, destination / name)
     (destination / "dependency-versions.json").write_text(json.dumps(versions, indent=2), "utf-8")
 
 
