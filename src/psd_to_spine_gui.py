@@ -457,7 +457,7 @@ def self_check(destination: Path) -> int:
         app.withdraw()
         core.build_export_script(Path("check.psd"), Path("check.json"), core.ExportOptions())
         with tempfile.TemporaryDirectory() as folder:
-            source = Path(folder) / "中文 设计.psd"
+            source = Path(folder).resolve() / "中文 设计.psd"
             source.touch()
             data = app.tk.call("list", str(source), str(source))
             app.on_drop(SimpleNamespace(data=data))

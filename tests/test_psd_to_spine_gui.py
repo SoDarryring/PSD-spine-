@@ -29,7 +29,7 @@ class WindowAndDropTests(unittest.TestCase):
                 # Use the same Tcl list representation delivered by native tkdnd.
                 data = app.tk.call("list", str(one), str(two), str(one))
                 app.on_drop(SimpleNamespace(data=data))
-                self.assertEqual(app.paths, [one, two])
+                self.assertEqual(app.paths, [one.resolve(), two.resolve()])
                 self.assertIsNone(app.output)
                 self.assertEqual(app.count.get(), "2 个文件")
                 self.assertTrue(app.TkdndVersion)

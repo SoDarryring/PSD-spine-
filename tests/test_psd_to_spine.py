@@ -31,7 +31,7 @@ class PsdExportTests(unittest.TestCase):
             with patch.object(core, "export_photoshop", side_effect=self.fake_photoshop), \
                     patch.object(core, "import_project", side_effect=self.fake_import):
                 result = core.convert(source, None, spine, core.ExportOptions(), log=lambda text: None)
-            self.assertEqual(result.parent.parent, source.parent)
+            self.assertEqual(result.parent.parent, source.parent.resolve())
             self.assertEqual({p.name for p in result.parent.iterdir()}, {"分层 设计.spine", "images"})
             self.assertEqual(source.read_bytes(), b"original PSD")
             self.assertFalse(list(root.glob(".psd-spine-*")))

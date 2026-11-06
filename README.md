@@ -70,6 +70,8 @@ python -m unittest discover -s tests -t . -v
 pwsh -File scripts/build.ps1
 ```
 
+如果依赖安装在前述虚拟环境中，打包时使用 `pwsh -File scripts/build.ps1 -PythonExecutable .venv/Scripts/python.exe`。
+
 打包产物位于 `dist/`。GitHub Actions 在 Windows 上运行常规测试，并构建可下载的便携包。常规测试不启动 Photoshop 或 Spine。
 
 真实 Photoshop / Spine 集成测试是显式启用的本地检查，使用代码生成的色块样例，不需要提供或上传美术资源：

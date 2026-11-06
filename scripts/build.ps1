@@ -1,4 +1,4 @@
-param([string]$OutputDirectory = 'dist')
+param([string]$OutputDirectory = 'dist', [string]$PythonExecutable = 'python')
 $ErrorActionPreference = 'Stop'
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $distRoot = [IO.Path]::GetFullPath((Join-Path $repoRoot $OutputDirectory))
@@ -7,12 +7,12 @@ if (-not $distRoot.StartsWith($repoRoot + [IO.Path]::DirectorySeparatorChar, [St
 }
 Push-Location $repoRoot
 try {
-    $version = (& python -c "import sys;sys.path.insert(0,'src');import psd_to_spine;print(psd_to_spine.VERSION)").Trim()
+    $version = (& $PythonExecutable -c "import sys;sys.path.insert(0,'src');import psd_to_spine;print(psd_to_spine.VERSION)").Trim()
     if ($LASTEXITCODE -ne 0 -or $version -notmatch '^\d+\.\d+\.\d+$') { throw '读取版本失败。' }
     $packageName = "PSD-to-Spine-v$version-windows-x64"
     $package = Join-Path $distRoot $packageName
     $vendorDirectory = Join-Path $repoRoot 'vendor/photoshop-to-spine'
-    python -m PyInstaller --noconfirm --clean --onefile --windowed `
+    & $PythonExecutable -m PyInstaller --noconfirm --clean --onefile --windowed `
         --name 'PSD一键转Spine' --distpath $package --workpath '.work/pyinstaller' --specpath '.work' `
         --collect-all customtkinter --collect-all tkinterdnd2 `
         --exclude-module numpy `
@@ -24,7 +24,7 @@ try {
     $licenses = Join-Path $package 'licenses'
     New-Item -ItemType Directory -Force -Path $licenses | Out-Null
     Copy-Item -LiteralPath 'vendor/photoshop-to-spine/LICENSE' -Destination (Join-Path $licenses 'PhotoshopToSpine-LICENSE.txt')
-    python scripts/collect_licenses.py $licenses
+    & $PythonExecutable scripts/collect_licenses.py $licenses
     if ($LASTEXITCODE -ne 0) { throw '依赖许可证收集失败。' }
     $selfCheck = Join-Path $repoRoot '.work/frozen-self-check.json'
     if (Test-Path -LiteralPath $selfCheck) { Remove-Item -LiteralPath $selfCheck }

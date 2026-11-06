@@ -18,7 +18,7 @@ class PhotoshopIntegrationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.temporary = TemporaryDirectory(prefix="psd-spine-integration-")
-        cls.root = Path(cls.temporary.name)
+        cls.root = Path(cls.temporary.name).resolve()
         cls.source = cls.root / "中文 中心点.psd"
         script = cls.root / "create-fixture.jsx"
         text = """#target photoshop
